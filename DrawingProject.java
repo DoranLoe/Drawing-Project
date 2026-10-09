@@ -83,7 +83,7 @@ public class DrawingProject implements ActionListener, ChangeListener{
 		//Sliders!
 		JSlider xIn = new JSlider (JSlider.HORIZONTAL,0,screenSize.width,screenSize.width/2);
 		xIn.addChangeListener(this);
-		JSlider yIn = new JSlider (JSlider.HORIZONTAL,0,screenSize.height,screenSize.height/2);
+		JSlider yIn = new JSlider (JSlider.VERTICAL,0,screenSize.height,screenSize.height/2);
 		JPanel slides = new JPanel();
 		slides.add(xIn);
 		slides.add(yIn);
