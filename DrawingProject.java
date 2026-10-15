@@ -9,14 +9,21 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
-public class DrawingProject implements ActionListener, ChangeListener{
+public class DrawingProject implements ActionListener, ChangeListener, MouseListener{
 	
-	JFrame frame = new JFrame("DrawingProjStartUpWindow");
-	JFrame sizingFrame = new JFrame("Select Canvas Size");
-	JFrame loadingFrame = new JFrame("Load Pre-existing image");
-	JFrame drawingFrame = new JFrame("Drawing Project");
+	private JFrame frame = new JFrame("DrawingProjStartUpWindow");
+	private JFrame sizingFrame = new JFrame("Select Canvas Size");
+	private JFrame loadingFrame = new JFrame("Load Pre-existing image");
+	private JFrame drawingFrame = new JFrame("Drawing Project");
 	// get screen dimensions, useful thanks frameDemo2
-	Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	//variables to decide the painting canvas size, default one quarter of total screen.
+	private int canX = screenSize.width/2;
+	private int canY = screenSize.height/2;
+	private final int BORDERSIZE = 75;
+	
+	private final boolean ISTESTING = true;
+	
 	
 	void main () 
 	{
@@ -51,8 +58,11 @@ public class DrawingProject implements ActionListener, ChangeListener{
 		//buttonPanel.setSize(new Dimension(screenSize.width/2, screenSize.height/2)); //seemed to do nothing put it in multiple spots
 		//testButton.setSize(new Dimension(screenSize.width/2, screenSize.height/2)); // also nothing
 		//before addign the button to the panel, lets try making it do something.
-		testButton.setActionCommand("enable");
+		testButton.setActionCommand("NewDrawing");
 		testButton.addActionListener(this);
+		//now the same for the load button. I'll figureout functionality later.
+		loadButton.setActionCommand("LoadDrawing");
+		loadButton.addActionListener(this);
 		//now add buttons to panel
 		buttonPanel.add(testButton);
 		buttonPanel.add(loadButton);
@@ -73,24 +83,36 @@ public class DrawingProject implements ActionListener, ChangeListener{
 	private void createAndOpenSizingWindow()
 	{
 		sizingFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		JLabel emptyLabel = new JLabel("");
-		frame.getContentPane().add(emptyLabel, BorderLayout.CENTER);
+		JLabel emptyLabel = new JLabel("Choose Size");
+		emptyLabel.setHorizontalAlignment(JLabel.CENTER);
+		sizingFrame.getContentPane().add(emptyLabel, BorderLayout.PAGE_START);
 		//Okay I want 2 fields that will contain numbers in pixels and a create button.
 		//I don't know if text input fields are a thing that is so easily do-able but I'll find out!
 		//Just looked up how / if text inputfields can be and I found https://web.mit.edu/6.005/www/sp14/psets/ps4/java-6-tutorial/components.html
 		//which has JSlider and I'm evil enough to put a slider into this.
 		//Also JInternalFrame??? I laughed outloud I think that's a delightfully silly idea.
 		//Sliders!
-		JSlider xIn = new JSlider (JSlider.HORIZONTAL,0,screenSize.width,screenSize.width/2);
+		JSlider xIn = new JSlider (JSlider.HORIZONTAL,0,screenSize.width-BORDERSIZE,canX); //- on the max since I want a border on the frame
+		xIn.setName("xIn");
+		xIn.setPaintTicks(true);
+		xIn.setMinorTickSpacing(screenSize.width/20);
+		xIn.setMajorTickSpacing(screenSize.width/10);
 		xIn.addChangeListener(this);
-		JSlider yIn = new JSlider (JSlider.VERTICAL,0,screenSize.height,screenSize.height/2);
-		JPanel slides = new JPanel();
-		slides.add(xIn);
-		slides.add(yIn);
+		//now the same for the y slider
+		JSlider yIn = new JSlider (JSlider.VERTICAL,0,screenSize.height-BORDERSIZE,canY);
+		yIn.setName("yIn");
+		yIn.setPaintTicks(true);
+		yIn.setMinorTickSpacing(screenSize.height/20);
+		yIn.setMajorTickSpacing(screenSize.height/10);
+		yIn.addChangeListener(this);
+		//add both to a panel and add panel.
+		JPanel slides = new JPanel(new BorderLayout());
+		slides.add(yIn, BorderLayout.LINE_START);
+		slides.add(xIn, BorderLayout.PAGE_END);
 		sizingFrame.getContentPane().add(slides, BorderLayout.CENTER);
 		//Button
 		JButton start = new JButton("Create");
-		start.setActionCommand("create");
+		start.setActionCommand("CreateCanvas");
 		start.addActionListener(this);
 		JPanel btnPanel = new JPanel ();
 		btnPanel.add(start);
@@ -100,15 +122,41 @@ public class DrawingProject implements ActionListener, ChangeListener{
 		sizingFrame.setVisible(true);
 	}
 	
+	private void createNewDrawingWindow()
+	{
+		drawingFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		//Okay now that we are here, we need to find some sort of way to make a canvas or image or panel or something that we can draw upon.
+		//that thing will be the base center of this window.
+		//though stumbling about the java api and scouring StdDraw for clues I found BufferedImage, ImageIO
+		//Found this video: https://www.youtube.com/watch?v=gp9H0WLxKgU which might become usefull when I want to load an image, but I want to have a canvas first.
+		//Found Graphics2D which contains the word paint and thus might be vital
+		//Graphics2D canvas = new Graphics2D(); Ah. it's abstract. useful to know. what uses you then?
+		//Ah. there's a component called Canvas. that seems glaringly obvious lets make that
+		Canvas can = new Canvas();
+		can.addMouseListener(this);
+		can.setSize(canX,canY);
+		drawingFrame.getContentPane().add(can,BorderLayout.CENTER);
+		drawingFrame.pack();
+		drawingFrame.setSize(new Dimension(canX+BORDERSIZE,canY+BORDERSIZE));
+		drawingFrame.setVisible(true);
+	}
 	
 	//Listener handling methods
+	//button handling
 	public void actionPerformed(ActionEvent e)
 	{
 		switch (e.getActionCommand())
 		{
-			case "enable":
+			case "NewDrawing":
 				createAndOpenSizingWindow();
 				frame.dispose();
+				break;
+			case "CreateCanvas":
+				createNewDrawingWindow();
+				sizingFrame.dispose();
+				break;
+			default:
+				IO.println("WARNING: actionHandler default case reached.\nCheck Action Commands for "+e.getActionCommand());
 				break;
 		}
 		/*
@@ -119,13 +167,51 @@ public class DrawingProject implements ActionListener, ChangeListener{
 		}*/
 	}
 	
+	//slider handling
 	public void stateChanged(ChangeEvent e) 
 	{// after ages of dealing with it not recognizing ChangeListener, it's because I needed another import
 		JSlider source = (JSlider)e.getSource();
         if (!source.getValueIsAdjusting()) {
-            int fps = (int)source.getValue();
-            IO.println("value changed to: "+fps);
+			if (ISTESTING)
+			{
+				int fps = (int)source.getValue();
+				IO.println("value "+source.getName()+" changed to: "+fps);
+				IO.println("Previous Values: canX ="+canX+", canY ="+canY);
+			}
+            switch(source.getName())
+            {
+				case "xIn":
+					canX= (int)source.getValue();
+					break;
+				case "yIn":
+					canY= (int)source.getValue();
+					break;
+				default:
+					IO.println("WARNING: changeHandler default case reached.\nCheck name for "+source.getName());
+					break;
+			}
         } 
+	}
+	//Mouse handling for canvas
+	public void mouseEntered (MouseEvent e)
+	{
+		IO.println("gothere");
+	}
+	public void mouseExited (MouseEvent e)
+	{
+		IO.println("gothere1");
+	}
+	public void mousePressed (MouseEvent e)
+	{
+		IO.println("gothere2");
+	}
+	public void mouseReleased (MouseEvent e)
+	{
+		IO.println("gothere3");
+	}
+	public void mouseClicked (MouseEvent e)
+	{
+		IO.println("gothere4");
 	}
 }
 
