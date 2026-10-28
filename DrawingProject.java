@@ -6,8 +6,10 @@
  */
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.*;
 import javax.swing.*;
 import javax.swing.event.*;
+import java.awt.geom.*;
 
 public class DrawingProject implements ActionListener, ChangeListener, MouseListener{
 	
@@ -122,23 +124,66 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
 		sizingFrame.setVisible(true);
 	}
 	
+	private Graphics2D graph;
+	private BufferedImage img;
+	private JPanel can; //my canvas becasue the canvas component sucks appearently
+	
 	private void createNewDrawingWindow()
 	{
 		drawingFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		//Okay now that we are here, we need to find some sort of way to make a canvas or image or panel or something that we can draw upon.
-		//that thing will be the base center of this window.
-		//though stumbling about the java api and scouring StdDraw for clues I found BufferedImage, ImageIO
-		//Found this video: https://www.youtube.com/watch?v=gp9H0WLxKgU which might become usefull when I want to load an image, but I want to have a canvas first.
-		//Found Graphics2D which contains the word paint and thus might be vital
-		//Graphics2D canvas = new Graphics2D(); Ah. it's abstract. useful to know. what uses you then?
-		//Ah. there's a component called Canvas. that seems glaringly obvious lets make that
-		Canvas can = new Canvas();
+		/*Okay now that we are here, we need to find some sort of way to make a canvas or image or panel or something that we can draw upon.
+		that thing will be the base center of this window.
+		though stumbling about the java api and scouring StdDraw for clues I found BufferedImage, ImageIO
+		Found this video: https://www.youtube.com/watch?v=gp9H0WLxKgU which might become usefull when I want to load an image, but I want to have a canvas first.
+		Found Graphics2D which contains the word paint and thus might be vital
+		Graphics2D canvas = new Graphics2D(); Ah. it's abstract. useful to know. what uses you then?
+		Ah. there's a component called Canvas. that seems glaringly obvious lets make that*/
+		
+		//new day new me. STDraw uses Graphics2d and bufferedImage to get a Graphics2d it also uses two of them one onscreen and one offscreen. let me just mess around a bit.
+		//Canvas can = new Canvas();
+		initCanvas();
+		graph.fill(new Ellipse2D.Double(250, 250, 500, 500));//seemed to do nothing
+		graph.fillOval(0, 0, 500, 500); //nothing again
+		can.paint(graph);// im starting to think this doesn't do anything. like at all.
 		can.addMouseListener(this);
 		can.setSize(canX,canY);
 		drawingFrame.getContentPane().add(can,BorderLayout.CENTER);
 		drawingFrame.pack();
 		drawingFrame.setSize(new Dimension(canX+BORDERSIZE,canY+BORDERSIZE));
 		drawingFrame.setVisible(true);
+	}
+	
+	//inspired by the method in STDraw, but I don't want to just copy their stuff. I want to know what it's doing
+	private void initCanvas()
+	{
+		if (graph != null) graph.dispose();
+        
+        img  = new BufferedImage(canX, canY, BufferedImage.TYPE_INT_ARGB);
+        graph = img.createGraphics();
+        
+        graph.setBackground(Color.BLACK);//might not be doing anything as it's in a panel and thus using it's background
+        graph.clearRect(0, 0, canX, canY);
+        graph.scale(1.0,1.0);//don't think I need this
+        
+        graph.setColor(Color.BLACK);
+        
+        can = new JPanel();
+	}
+	
+	private void drawCircle(int x, int y)
+	{//currently a test
+		IO.print("entered DrawCircle with corrds: "+x+", "+y);
+		graph.fill(new Ellipse2D.Double(x-100, y-100, 200, 200)); //these two methods need to do SOMETHING
+		graph.fillOval(x-100, y-100, 200, 200);
+		updateImg();
+	}
+	
+	private void updateImg()
+	{
+		IO.print("Entered updateImg");
+		//can.update(onscreen);
+		
+        //drawingFrame.repaint();
 	}
 	
 	//Listener handling methods
@@ -211,6 +256,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
 	}
 	public void mouseClicked (MouseEvent e)
 	{
+		drawCircle(e.getX(), e.getY());//eventually change this
 		IO.println("gothere4");
 	}
 }
