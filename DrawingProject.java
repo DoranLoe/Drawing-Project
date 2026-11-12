@@ -11,7 +11,7 @@ import javax.swing.*;
 import javax.swing.event.*;
 import java.awt.geom.*;
 
-public class DrawingProject implements ActionListener, ChangeListener, MouseListener{
+public class DrawingProject implements ActionListener, ChangeListener, MouseInputListener{
 	
 	private JFrame frame = new JFrame("DrawingProjStartUpWindow");
 	private JFrame sizingFrame = new JFrame("Select Canvas Size");
@@ -126,7 +126,8 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
 	
 	private Graphics2D graph;
 	private BufferedImage img;
-	private JPanel can; //my canvas becasue the canvas component sucks appearently
+	private JLabel can; //my canvas becasue the canvas component sucks appearently
+	private short drawMode;
 	
 	private void createNewDrawingWindow()
 	{
@@ -142,12 +143,18 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
 		//new day new me. STDraw uses Graphics2d and bufferedImage to get a Graphics2d it also uses two of them one onscreen and one offscreen. let me just mess around a bit.
 		//Canvas can = new Canvas();
 		initCanvas();
-		graph.fill(new Ellipse2D.Double(250, 250, 500, 500));//seemed to do nothing
-		graph.fillOval(0, 0, 500, 500); //nothing again
-		can.paint(graph);// im starting to think this doesn't do anything. like at all.
+		//JLabel testL = new JLabel();
+			//testL.setIcon(New ImageIcon(graph));
+		//graph.fill(new Ellipse2D.Double(250, 250, 500, 500));//seemed to do nothing
+		//graph.fillOval(0, 0, 500, 500); //nothing again
+		//can.paint(graph);// im starting to think this doesn't do anything. like at all.
+		//can.addMouseListener(this);
 		can.addMouseListener(this);
-		can.setSize(canX,canY);
+		can.addMouseMotionListener(this);
+		can.setIcon(new ImageIcon(img));
+		//can.setSize(canX,canY);
 		drawingFrame.getContentPane().add(can,BorderLayout.CENTER);
+		drawingFrame.setJMenuBar(createDrawingMenu());
 		drawingFrame.pack();
 		drawingFrame.setSize(new Dimension(canX+BORDERSIZE,canY+BORDERSIZE));
 		drawingFrame.setVisible(true);
@@ -161,29 +168,66 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
         img  = new BufferedImage(canX, canY, BufferedImage.TYPE_INT_ARGB);
         graph = img.createGraphics();
         
-        graph.setBackground(Color.BLACK);//might not be doing anything as it's in a panel and thus using it's background
+        graph.setBackground(Color.WHITE);//might not be doing anything as it's in a panel and thus using it's background
         graph.clearRect(0, 0, canX, canY);
         graph.scale(1.0,1.0);//don't think I need this
         
         graph.setColor(Color.BLACK);
+        drawMode =0;
         
-        can = new JPanel();
+        can = new JLabel();
+	}
+	
+	private JMenuBar createDrawingMenu()
+	{
+		JMenuBar bar = new JMenuBar();
+		
+		JMenu fMenu = new JMenu("File"); 
+		fMenu.setMnemonic(KeyEvent.VK_F);
+		fMenu.getAccessibleContext().setAccessibleDescription("Nothing yet");
+		bar.add(fMenu);
+		
+		JMenu dmMenu = new JMenu("Brushes"); 
+		dmMenu.setMnemonic(KeyEvent.VK_B);
+		dmMenu.getAccessibleContext().setAccessibleDescription("Select what type of drawing mode to use");
+		bar.add(dmMenu);
+		
+		JMenuItem pen = new JMenuItem("Pen");
+		pen.setMnemonic(KeyEvent.VK_P);
+		pen.getAccessibleContext().setAccessibleDescription("Default Selection");
+		pen.setActionCommand("setPen");
+		pen.addActionListener(this);
+		dmMenu.add(pen);
+		
+		return bar;
 	}
 	
 	private void drawCircle(int x, int y)
 	{//currently a test
-		IO.print("entered DrawCircle with corrds: "+x+", "+y);
-		graph.fill(new Ellipse2D.Double(x-100, y-100, 200, 200)); //these two methods need to do SOMETHING
-		graph.fillOval(x-100, y-100, 200, 200);
+		IO.println("entered DrawCircle with corrds: "+x+", "+y);
+		//IO.println(graph);
+		//graph.fill(new Ellipse2D.Double(x-100, y-100, 200, 200)); //these two methods need to do SOMETHING
+		graph.fillOval(x-5, y-10, 10, 10);
 		updateImg();
 	}
+	
+	/*private boolean mD = false; //a test
+	private void drawMoreCircles()
+	{
+		while(mD)
+		{
+			//this should cause an infinite loop if I understand correctly.
+			//correct it did. this is because mouseReleased couldn't happen.
+			//so how do I correct for that? can I run something to check if a mouse button is STILL being pressed?
+		}
+	}*/
 	
 	private void updateImg()
 	{
 		IO.print("Entered updateImg");
-		//can.update(onscreen);
+		//can.update(graph);
 		
-        //drawingFrame.repaint();
+        drawingFrame.repaint();
 	}
 	
 	//Listener handling methods
@@ -199,6 +243,9 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
 			case "CreateCanvas":
 				createNewDrawingWindow();
 				sizingFrame.dispose();
+				break;
+			case "setPen":
+				drawMode=1;
 				break;
 			default:
 				IO.println("WARNING: actionHandler default case reached.\nCheck Action Commands for "+e.getActionCommand());
@@ -248,17 +295,42 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
 	}
 	public void mousePressed (MouseEvent e)
 	{
+		//mD=true;
+		//drawMoreCircles();
 		IO.println("gothere2");
 	}
 	public void mouseReleased (MouseEvent e)
 	{
+		switch(drawMode)
+		{
+			case 1: break; // does nothing in this context, but isn't invalid
+			case 0:
+				drawCircle(e.getX(), e.getY());
+				break;
+			default: IO.println("Invalid drawMode state detected.");
+		}
 		IO.println("gothere3");
 	}
 	public void mouseClicked (MouseEvent e)
 	{
-		drawCircle(e.getX(), e.getY());//eventually change this
+		//drawCircle(e.getX(), e.getY());//eventually change this
 		IO.println("gothere4");
 	}
+	public void mouseDragged(MouseEvent e)
+	{
+		switch(drawMode)
+		{
+			case 1: break; // does nothing in this context, but isn't invalid
+			case 0:
+				drawCircle(e.getX(), e.getY());
+				break;
+			default: IO.println("Invalid drawMode state detected.");
+		}
+		//drawCircle(e.getX(), e.getY());//OKAY! lets create a drawtype integer thing and a switch case so I can have more than a standard brush.
+		IO.println("gothereMouseDrag");
+	}
+	public void mouseMoved (MouseEvent e)
+	{}
 }
 
 /*So day one of working on this project, what have I learned.
@@ -272,3 +344,15 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseList
  The Content Pane and Panels seem to use Layouts. The content pane seems to use the Border Layout by default and Panels use FlowLayout. you can change this.
  Also I learned how to obtain the screen size. that's wild.*/
 
+/*
+ *11/4/26
+ Last week I tried to get anything to show up on the "drawign pad" I'll call it right now.
+ Tried using the Canvas object only to find that it doesn't actually paint anything.
+ Then I tried using JPanel since it had a paint method only to find that that method also does nothing.
+ I think they're supposed to be overritten in subclasses. but that still raises the question of why make a method that does nothing?
+ Especially something like that, since I don't know how to get a pixel to change colors on the screen.
+ I don't have much time today to work on things, I jsut want to make sure that's the issue and try to maybe figure out something else. 
+ Not seeign anythign on the graphics objects themselves. lets look at that video I found 2 weeks ago. https://www.youtube.com/watch?v=gp9H0WLxKgU
+ They're using JLabels and creating imageIcons for it. lets try that.
+ HOLY KARP It's working! it's doing a thing!
+ **/
