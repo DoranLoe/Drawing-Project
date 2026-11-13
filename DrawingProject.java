@@ -22,7 +22,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	//variables to decide the painting canvas size, default one quarter of total screen.
 	private int canX = screenSize.width/2;
 	private int canY = screenSize.height/2;
-	private final int BORDERSIZE = 75;
+	private final int BORDERSIZE = 0;
 	
 	private final boolean ISTESTING = true;
 	
@@ -99,6 +99,8 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		xIn.setPaintTicks(true);
 		xIn.setMinorTickSpacing(screenSize.width/20);
 		xIn.setMajorTickSpacing(screenSize.width/10);
+		xIn.setLabelTable(xIn.createStandardLabels(screenSize.width/20));// with the ticks created we now label them
+		xIn.setPaintLabels(true);
 		xIn.addChangeListener(this);
 		//now the same for the y slider
 		JSlider yIn = new JSlider (JSlider.VERTICAL,0,screenSize.height-BORDERSIZE,canY);
@@ -106,6 +108,8 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		yIn.setPaintTicks(true);
 		yIn.setMinorTickSpacing(screenSize.height/20);
 		yIn.setMajorTickSpacing(screenSize.height/10);
+		yIn.setLabelTable(yIn.createStandardLabels(screenSize.height/20));// with the ticks created we now label them
+		yIn.setPaintLabels(true);
 		yIn.addChangeListener(this);
 		//add both to a panel and add panel.
 		JPanel slides = new JPanel(new BorderLayout());
@@ -120,7 +124,8 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		btnPanel.add(start);
 		sizingFrame.getContentPane().add(btnPanel, BorderLayout.PAGE_END);
 		sizingFrame.pack();
-		sizingFrame.setSize(new Dimension(screenSize.width/4, screenSize.height/4));
+		sizingFrame.setSize(new Dimension(screenSize.width/3, screenSize.height/3));
+		sizingFrame.setLocation(frame.getLocation().x,frame.getLocation().y);
 		sizingFrame.setVisible(true);
 	}
 	
@@ -157,6 +162,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		drawingFrame.setJMenuBar(createDrawingMenu());
 		drawingFrame.pack();
 		drawingFrame.setSize(new Dimension(canX+BORDERSIZE,canY+BORDERSIZE));
+		drawingFrame.setLocation(sizingFrame.getLocation().x,sizingFrame.getLocation().y);
 		drawingFrame.setVisible(true);
 	}
 	
@@ -207,7 +213,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		IO.println("entered DrawCircle with corrds: "+x+", "+y);
 		//IO.println(graph);
 		//graph.fill(new Ellipse2D.Double(x-100, y-100, 200, 200)); //these two methods need to do SOMETHING
-		graph.fillOval(x-5, y-10, 10, 10);
+		graph.fillOval(x-5, y+27, 10, 10);//figure out why those values keep breaking. is it the border?
 		updateImg();
 	}
 	
