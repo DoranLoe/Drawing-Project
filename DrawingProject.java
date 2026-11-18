@@ -129,10 +129,10 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		sizingFrame.setVisible(true);
 	}
 	
+	// window variables
 	private Graphics2D graph;
 	private BufferedImage img;
 	private JLabel can; //my canvas becasue the canvas component sucks appearently
-	private short drawMode;
 	
 	private void createNewDrawingWindow()
 	{
@@ -205,15 +205,38 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		pen.addActionListener(this);
 		dmMenu.add(pen);
 		
+		JMenuItem rect = new JMenuItem("Rectangle");
+		rect.setMnemonic(KeyEvent.VK_R);
+		rect.getAccessibleContext().setAccessibleDescription("Draws a rectangle");
+		rect.setActionCommand("setRect");
+		rect.addActionListener(this);
+		dmMenu.add(rect);
+		
 		return bar;
 	}
 	
+	//drawing variables
+	private short drawMode;
+	private Point mdLoc;
+	
 	private void drawCircle(int x, int y)
-	{//currently a test
+	{
 		IO.println("entered DrawCircle with corrds: "+x+", "+y);
 		//IO.println(graph);
 		//graph.fill(new Ellipse2D.Double(x-100, y-100, 200, 200)); //these two methods need to do SOMETHING
 		graph.fillOval(x-5, y+27, 10, 10);//figure out why those values keep breaking. is it the border?
+		updateImg();
+	}
+	
+	private void drawSquare(int x, int y) //draw mode 2
+	{// draw a square from mdLoc to mrLoc, which is the given ints
+		// fixing the coord offset that exists for some reason.
+		int x1= x>mdLoc.getX()? x:(int)mdLoc.getX();
+		int y1= y>mdLoc.getY()? y+32:(int)mdLoc.getY()+32;
+		int x2= (x1==x)? (int)mdLoc.getX():x;
+		int y2= (y1==y+32)? (int)mdLoc.getY()+32:y+32;
+		IO.println("entered DrawSquare with corrds: "+x1+", "+y1+" and "+x2+", "+y2);
+		graph.fillRect(x2, y2, x1-x2, y1-y2);
 		updateImg();
 	}
 	
@@ -252,6 +275,9 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 				break;
 			case "setPen":
 				drawMode=1;
+				break;
+			case "setRect":
+				drawMode =2;
 				break;
 			default:
 				IO.println("WARNING: actionHandler default case reached.\nCheck Action Commands for "+e.getActionCommand());
@@ -301,21 +327,35 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	}
 	public void mousePressed (MouseEvent e)
 	{
-		//mD=true;
-		//drawMoreCircles();
-		IO.println("gothere2");
-	}
-	public void mouseReleased (MouseEvent e)
-	{
 		switch(drawMode)
 		{
 			case 1: break; // does nothing in this context, but isn't invalid
+			case 2:
+				mdLoc = new Point(e.getX(), e.getY());
+				break;
 			case 0:
 				drawCircle(e.getX(), e.getY());
 				break;
 			default: IO.println("Invalid drawMode state detected.");
 		}
-		IO.println("gothere3");
+		//mD=true;
+		//drawMoreCircles();
+		//IO.println("gothere2");
+	}
+	public void mouseReleased (MouseEvent e)
+	{
+		switch(drawMode)
+		{		
+			case 1: break; // does nothing in this context, but isn't invalid
+			case 2:
+				drawSquare(e.getX(), e.getY());
+				break;
+			case 0:
+				drawCircle(e.getX(), e.getY());
+				break;
+			default: IO.println("Invalid drawMode state detected.");
+		}
+		//IO.println("gothere3");
 	}
 	public void mouseClicked (MouseEvent e)
 	{
@@ -326,6 +366,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	{
 		switch(drawMode)
 		{
+			case 2:
 			case 1: break; // does nothing in this context, but isn't invalid
 			case 0:
 				drawCircle(e.getX(), e.getY());
@@ -333,7 +374,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 			default: IO.println("Invalid drawMode state detected.");
 		}
 		//drawCircle(e.getX(), e.getY());//OKAY! lets create a drawtype integer thing and a switch case so I can have more than a standard brush.
-		IO.println("gothereMouseDrag");
+		//IO.println("gothereMouseDrag");
 	}
 	public void mouseMoved (MouseEvent e)
 	{}
