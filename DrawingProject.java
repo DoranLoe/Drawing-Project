@@ -9,7 +9,10 @@ import java.awt.event.*;
 import java.awt.image.*;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.imageio.*;
 import java.awt.geom.*;
+//import java.util.*;
+import java.io.*;
 
 public class DrawingProject implements ActionListener, ChangeListener, MouseInputListener{
 	
@@ -193,6 +196,13 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		fMenu.getAccessibleContext().setAccessibleDescription("Nothing yet");
 		bar.add(fMenu);
 		
+		JMenuItem save = new JMenuItem("Save");
+		save.setMnemonic(KeyEvent.VK_S);
+		save.getAccessibleContext().setAccessibleDescription("Select what type of drawing mode to use");
+		save.setActionCommand("SaveImg");
+		save.addActionListener(this);
+		fMenu.add(save);
+		
 		JMenu dmMenu = new JMenu("Brushes"); 
 		dmMenu.setMnemonic(KeyEvent.VK_B);
 		dmMenu.getAccessibleContext().setAccessibleDescription("Select what type of drawing mode to use");
@@ -221,7 +231,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	
 	private void drawCircle(int x, int y)
 	{
-		IO.println("entered DrawCircle with corrds: "+x+", "+y);
+		//IO.println("entered DrawCircle with corrds: "+x+", "+y);
 		//IO.println(graph);
 		//graph.fill(new Ellipse2D.Double(x-100, y-100, 200, 200)); //these two methods need to do SOMETHING
 		graph.fillOval(x-5, y+27, 10, 10);//figure out why those values keep breaking. is it the border?
@@ -235,32 +245,54 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		int y1= y>mdLoc.getY()? y+32:(int)mdLoc.getY()+32;
 		int x2= (x1==x)? (int)mdLoc.getX():x;
 		int y2= (y1==y+32)? (int)mdLoc.getY()+32:y+32;
-		IO.println("entered DrawSquare with corrds: "+x1+", "+y1+" and "+x2+", "+y2);
+		if (ISTESTING)
+			IO.println("entered DrawSquare with corrds: "+x1+", "+y1+" and "+x2+", "+y2);
 		graph.fillRect(x2, y2, x1-x2, y1-y2);
 		updateImg();
 	}
 	
-	/*private boolean mD = false; //a test
-	private void drawMoreCircles()
-	{
-		while(mD)
-		{
-			//this should cause an infinite loop if I understand correctly.
-			//correct it did. this is because mouseReleased couldn't happen.
-			//so how do I correct for that? can I run something to check if a mouse button is STILL being pressed?
-		}
-	}*/
-	
 	private void updateImg()
 	{
-		IO.print("Entered updateImg");
+		//IO.print("Entered updateImg");
 		//can.update(graph);
 		
         drawingFrame.repaint();
 	}
 	
+	//save and loading methods:
+	// thinking about this I could probably seperate these into a seperate class file. They're my ImageIO managing methods.
+	// could probably do the same with the drawing methods. making everything in one big file is an issue of mine that I should learn from.
+	
+	String fileName;
+	
+	private void saveImg()//testing time
+	{
+		if (fileName == null)
+		{
+			if (ISTESTING)
+				IO.println("WARNING: no File Name Detected, moving to Save As");
+			saveAsImg();
+			return;
+		}
+		try
+		{
+			ImageIO.write(img, "png", new File(fileName+".png"));
+			if (ISTESTING)
+				IO.println("File Saved as: "+fileName+".png");
+		}catch (Exception e)
+		{
+			IO.println("Exception Occured during saving.\n"+e.getMessage());
+		}
+	}
+	
+	private void saveAsImg()
+	{
+		fileName = "test2";
+		saveImg();
+	}
+	
 	//Listener handling methods
-	//button handling
+	//button and menu handling
 	public void actionPerformed(ActionEvent e)
 	{
 		switch (e.getActionCommand())
@@ -274,10 +306,13 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 				sizingFrame.dispose();
 				break;
 			case "setPen":
-				drawMode=1;
+				drawMode=0;
 				break;
 			case "setRect":
-				drawMode =2;
+				drawMode =1;
+				break;
+			case "SaveImg":
+				saveImg();
 				break;
 			default:
 				IO.println("WARNING: actionHandler default case reached.\nCheck Action Commands for "+e.getActionCommand());
@@ -319,18 +354,20 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	//Mouse handling for canvas
 	public void mouseEntered (MouseEvent e)
 	{
-		IO.println("gothere");
+		if (ISTESTING)
+			IO.println("gothere");
 	}
 	public void mouseExited (MouseEvent e)
 	{
-		IO.println("gothere1");
+		if (ISTESTING)
+			IO.println("gothere1");
 	}
 	public void mousePressed (MouseEvent e)
 	{
 		switch(drawMode)
 		{
-			case 1: break; // does nothing in this context, but isn't invalid
-			case 2:
+			case 2: break; // does nothing in this context, but isn't invalid
+			case 1:
 				mdLoc = new Point(e.getX(), e.getY());
 				break;
 			case 0:
@@ -346,8 +383,8 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	{
 		switch(drawMode)
 		{		
-			case 1: break; // does nothing in this context, but isn't invalid
-			case 2:
+			case 2: break; // does nothing in this context, but isn't invalid
+			case 1:
 				drawSquare(e.getX(), e.getY());
 				break;
 			case 0:
