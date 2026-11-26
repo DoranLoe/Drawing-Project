@@ -16,16 +16,27 @@ import java.io.*;
 
 public class DrawingProject implements ActionListener, ChangeListener, MouseInputListener{
 	
+	//window making things, Probably don't need ALL these frames. could have been more careful and used like only two.
 	private JFrame frame = new JFrame("DrawingProjStartUpWindow");
+	
 	private JFrame sizingFrame = new JFrame("Select Canvas Size");
+	
 	private JFrame loadingFrame = new JFrame("Load Pre-existing image");
+	
 	private JFrame drawingFrame = new JFrame("Drawing Project");
+	private Graphics2D graph;
+	private BufferedImage img;
+	private JLabel can; //my canvas becasue the canvas component sucks appearently
+	
+	private JFrame saveAsFrame;
+	private JTextField saveAsText;
 	// get screen dimensions, useful thanks frameDemo2
 	private Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	
 	//variables to decide the painting canvas size, default one quarter of total screen.
 	private int canX = screenSize.width/2;
 	private int canY = screenSize.height/2;
-	private final int BORDERSIZE = 0;
+	private final int BORDERSIZE = 0; // I think this changes the drawing unfortunately, should remove.
 	
 	private final boolean ISTESTING = true;
 	
@@ -132,11 +143,6 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		sizingFrame.setVisible(true);
 	}
 	
-	// window variables
-	private Graphics2D graph;
-	private BufferedImage img;
-	private JLabel can; //my canvas becasue the canvas component sucks appearently
-	
 	private void createNewDrawingWindow()
 	{
 		drawingFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -169,6 +175,32 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		drawingFrame.setVisible(true);
 	}
 	
+	private void createSaveAsWindow()
+	{
+		saveAsFrame = new JFrame("Save As");
+		saveAsFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		JLabel fileLabel = new JLabel("What should the file be saved as? Will be a png.");
+		
+		fileLabel.setHorizontalAlignment(JLabel.CENTER);
+		saveAsFrame.getContentPane().add(fileLabel, BorderLayout.PAGE_START);
+		
+		saveAsText = new JTextField(20); //doing that thing where it takes up the entire thing, so what if I add it to a panel?
+		JPanel textInputPanel = new JPanel();
+		textInputPanel.add(saveAsText);
+		saveAsFrame.getContentPane().add(textInputPanel, BorderLayout.CENTER);
+		
+		JButton saveButton = new JButton("Save");
+		saveButton.setActionCommand ("SaveAsButton");
+		saveButton.addActionListener(this);
+		saveAsFrame.getContentPane().add(saveButton, BorderLayout.PAGE_END);
+		
+		saveAsFrame.pack();
+		saveAsFrame.setSize(320,135);//double check this
+		saveAsFrame.setLocation(drawingFrame.getLocation().x,drawingFrame.getLocation().y);
+		saveAsFrame.setVisible(true);
+	}
+	
+	
 	//inspired by the method in STDraw, but I don't want to just copy their stuff. I want to know what it's doing
 	private void initCanvas()
 	{
@@ -191,6 +223,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	{
 		JMenuBar bar = new JMenuBar();
 		
+		// file menu and items
 		JMenu fMenu = new JMenu("File"); 
 		fMenu.setMnemonic(KeyEvent.VK_F);
 		fMenu.getAccessibleContext().setAccessibleDescription("Nothing yet");
@@ -198,11 +231,19 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 		
 		JMenuItem save = new JMenuItem("Save");
 		save.setMnemonic(KeyEvent.VK_S);
-		save.getAccessibleContext().setAccessibleDescription("Select what type of drawing mode to use");
+		save.getAccessibleContext().setAccessibleDescription("Save current image");
 		save.setActionCommand("SaveImg");
 		save.addActionListener(this);
 		fMenu.add(save);
 		
+		JMenuItem saveAs = new JMenuItem("Save As");
+		saveAs.setMnemonic(KeyEvent.VK_N);
+		saveAs.getAccessibleContext().setAccessibleDescription("Save current image under new name");
+		saveAs.setActionCommand("SaveAsImg");
+		saveAs.addActionListener(this);
+		fMenu.add(saveAs);
+		
+		// drawing mode menu and items
 		JMenu dmMenu = new JMenu("Brushes"); 
 		dmMenu.setMnemonic(KeyEvent.VK_B);
 		dmMenu.getAccessibleContext().setAccessibleDescription("Select what type of drawing mode to use");
@@ -265,7 +306,7 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 	
 	String fileName;
 	
-	private void saveImg()//testing time
+	private void saveImg()//currently no overwrite warnings or indeed any user feedback. it just does it.
 	{
 		if (fileName == null)
 		{
@@ -281,14 +322,21 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 				IO.println("File Saved as: "+fileName+".png");
 		}catch (Exception e)
 		{
-			IO.println("Exception Occured during saving.\n"+e.getMessage());
+			IO.println("ERROR: Exception Occured during saving.\n"+e.getMessage());
 		}
 	}
 	
 	private void saveAsImg()
-	{
-		fileName = "test2";
-		saveImg();
+	{ // we go here if we need to set or change the file name.
+		// so my idea is that we open up yet another new window.
+		//this one has A text field and a button.
+		//when button is pressed it sets the filename to what was entered into the textfield, closes the window, then saves the image.
+		//closing the window outright doesn't set the filename.
+		//okay. Reading JTextField, it appears to send an action event on press of enter. 
+		// that action command doesn't actually have the text in it it doesn't look. the textfield does.
+		//I have a plan.
+		createSaveAsWindow();
+		//saveImg();
 	}
 	
 	//Listener handling methods
@@ -313,6 +361,22 @@ public class DrawingProject implements ActionListener, ChangeListener, MouseInpu
 				break;
 			case "SaveImg":
 				saveImg();
+				break;
+			case "SaveAsImg":
+				createSaveAsWindow();
+				//saveAsImg();
+				break;
+			case "SaveAsButton":
+				if (saveAsText.getText().isEmpty()||saveAsText.getText().matches(".*[/\\\\?%\\*:|\"<>\\.,;=]+.*")) // A file with any of those characters and maybe more aren't going to play well
+				{// Grabbed that list from https://en.wikipedia.org/wiki/Filename and pulled up my notes on REGEX from earlier this quarter.
+					saveAsText.setText("Invalid\\File\\Name");
+					break;
+				}
+				fileName = saveAsText.getText().trim();
+				saveImg();
+				saveAsFrame.dispose();
+				saveAsFrame =null;
+				saveAsText = null;
 				break;
 			default:
 				IO.println("WARNING: actionHandler default case reached.\nCheck Action Commands for "+e.getActionCommand());
